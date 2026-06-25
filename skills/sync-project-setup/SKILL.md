@@ -1,42 +1,38 @@
 ---
 name: sync-project-setup
-description: Use when the user installs a tool/package, adds or changes an MCP server or Claude setting, or asks to make something usable "project-wide" / "for everyone" in this shared .claude repo. First confirms whether to share it with ALL repo users; if yes, records it so others sync by re-running setup.sh (MCP -> mcp/servers.json, installs -> setup.sh install_tools(), settings -> setup.sh apply_settings()), updates README, and commits to the develop branch.
+description: ユーザーがツール/パッケージをインストールしたとき、MCP サーバや Claude の設定を追加・変更したとき、または「プロジェクト全体で使えるように」「全員が使えるように」と言ったときに使う。まず「リポジトリ利用者 全員に展開してよいか」を確認し、yes なら他の人が setup.sh の再実行で同期できるよう記録する（MCP は mcp/servers.json、インストールは setup.sh の install_tools()、設定は apply_settings()）。README を更新し、develop ブランチにコミットする。
 ---
 
-# Sync project setup
+# プロジェクト設定の同期 (sync-project-setup)
 
-This `.claude/` directory is a **shared config repo** (`kana-tanaka/.claude`) that teammates
-place into their own projects. Anything meant for "everyone" must be recorded here so others
-get it by re-running `setup.sh`.
+この `.claude/` ディレクトリは**共有設定リポジトリ**（`kana-tanaka/.claude`）で、各メンバーが自分のプロジェクトに配置して使う。
+「全員向け」のものは、他の人が `setup.sh` を再実行すれば手に入るよう、ここに記録する必要がある。
 
-## When to use
+## 使うタイミング
 
-Trigger this whenever, in this workspace, the user:
+このワークスペースで、ユーザーが次のいずれかをしたとき:
 
-- installs a tool/package and it might be needed by others,
-- adds or changes an **MCP server** or a Claude setting,
-- says things like「プロジェクト全体で使えるように」「全員が使えるように」.
+- ツール/パッケージをインストールし、他の人にも必要そうなとき
+- **MCP サーバ** や Claude の設定を追加・変更したとき
+- 「プロジェクト全体で使えるように」「全員が使えるように」などと言ったとき
 
-## Steps
+## 手順
 
-1. **Confirm sharing first.** Ask the user (AskUserQuestion) whether this should be available
-   to **all** users of the repo, or kept local to this machine only.
-   - If local only → do it locally and stop. Do not touch the repo.
+1. **まず展開の可否を確認する。** AskUserQuestion で「リポジトリ利用者 **全員** に展開するか、このマシンだけのローカルに留めるか」を尋ねる。
+   - ローカルだけ → ローカルで実施して終了。リポジトリには触れない。
 
-2. **Record it so `setup.sh` re-run = sync.** Pick the right place:
-   - **MCP server** → edit `.claude/mcp/servers.json` (synced to `<project>/.mcp.json` by `sync_mcp`).
-   - **Tool/package install** → add an **idempotent** command to `install_tools()` in `.claude/setup.sh`
-     (e.g. `command -v X >/dev/null || <install>`).
-   - **Other Claude setting** → add to `apply_settings()` in `.claude/setup.sh`, or commit the
-     relevant settings file.
+2. **`setup.sh` の再実行 = 同期 になるように記録する。** 適切な場所を選ぶ:
+   - **MCP サーバ** → `.claude/mcp/servers.json` を編集（`sync_mcp` が `<project>/.mcp.json` に同期）
+   - **ツール/パッケージのインストール** → `.claude/setup.sh` の `install_tools()` に**冪等な**コマンドを追記
+     （例: `command -v X >/dev/null || <install>`）
+   - **その他の Claude 設定** → `.claude/setup.sh` の `apply_settings()` に追記、または該当の設定ファイルをコミット
 
-3. **Update `.claude/README.md`** if the user-facing setup/prerequisites changed.
+3. **`.claude/README.md` を更新する**（利用者向けの手順や前提が変わった場合）。
 
-4. **Commit to the `develop` branch and push** (this repo uses `develop`).
+4. **`develop` ブランチにコミットして push する**（このリポジトリは `develop` 運用）。
 
-## Notes
+## 注意
 
-- `.mcp.json` is read from the **project root**, not from inside `.claude/`; that is why
-  `setup.sh` writes to the parent directory.
-- Keep `setup.sh` idempotent so re-running it simply syncs to the latest state.
-- Never commit secrets. Reference them via env vars (e.g. `${SLACK_BOT_TOKEN}`).
+- `.mcp.json` は**プロジェクトルート**で読まれ、`.claude/` の中では読まれない。だから `setup.sh` は親ディレクトリに配置する。
+- `setup.sh` は冪等に保つ。再実行するだけで最新状態に同期されるようにする。
+- 秘密情報はコミットしない。環境変数で参照する（例: `${SLACK_BOT_TOKEN}`）。

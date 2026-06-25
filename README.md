@@ -11,6 +11,13 @@
 | `mcp/servers.json` | 共有 MCP サーバ定義（git / slack） |
 | `setup.sh` | 全員で使うもの（MCP・ツール・設定）をプロジェクトに適用/同期するスクリプト |
 
+同梱スキル（`skills/`）:
+
+| スキル | 用途 |
+|---|---|
+| `sync-project-setup` | インストール/設定/MCP を「全員向け」に展開する流れ（展開可否を確認 → setup.sh 等に記録 → develop へ） |
+| `sync-skills` | あるディレクトリの `.claude/skills` を別プロジェクトへ同期（追加/上書き、`--mirror`、`--dry-run`） |
+
 `setup.sh` が現状セットアップするもの:
 
 - **git MCP** … `uvx mcp-server-git`（前提: [uv](https://docs.astral.sh/uv/)）

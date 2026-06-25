@@ -1,4 +1,6 @@
-# skills 以外をすべて無視する
+# skills 以外をすべて無視する（MCP セットアップ関連は例外的に追跡）
 /*
 !/.gitignore
 !/skills/
+!/setup.sh
+!/mcp/

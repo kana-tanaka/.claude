@@ -1,45 +1,66 @@
 #!/usr/bin/env bash
 #
-# このリポジトリ (.claude) を <project>/.claude として配置したあと、
-# プロジェクトルートで以下を実行すると git / slack の MCP サーバが使えるようになります:
+# プロジェクト全体（このリポジトリを使う人 全員）で使う共有セットアップ。
 #
-#     bash .claude/setup.sh
+# 使い方:
+#   このリポジトリを <project>/.claude として配置し、プロジェクトルートで実行:
+#       bash .claude/setup.sh
 #
-# やっていること:
-#   - mcp/servers.json の内容を <project>/.mcp.json に配置（既存ならマージ）
-#   - .mcp.json は Claude Code がプロジェクトルートで読む共有 MCP 設定ファイル
+# 役割:
+#   - sync_mcp()       : MCP サーバ設定を <project>/.mcp.json に同期 (mcp/servers.json が正)
+#   - install_tools()  : 全員で使うツール/パッケージのインストール
+#   - apply_settings() : その他の共有設定の適用
 #
-# 前提:
-#   - git MCP  : uv (uvx) が必要         https://docs.astral.sh/uv/
-#   - slack MCP: node/npx が必要 + 環境変数 SLACK_BOT_TOKEN / SLACK_TEAM_ID
+# 何度でも実行可能。設定や MCP を更新したら再実行すれば最新状態に sync される。
+#
+# ■ 新しく「全員で使えるようにしたい」ものが出たら、ここに追記する:
+#     - MCP サーバ        -> mcp/servers.json を編集（sync_mcp が自動で同期）
+#     - インストールが要る -> install_tools() に冪等なコマンドを追記
+#     - その他の設定       -> apply_settings() に追記
 #
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # .../.claude
 PROJECT_ROOT="$(dirname "$HERE")"
-SRC="$HERE/mcp/servers.json"
-DEST="$PROJECT_ROOT/.mcp.json"
 
-if [ ! -f "$SRC" ]; then
-  echo "✗ テンプレートが見つかりません: $SRC" >&2
-  exit 1
-fi
+# --- MCP サーバ設定を <project>/.mcp.json に同期 ------------------------------
+sync_mcp() {
+  local src="$HERE/mcp/servers.json"
+  local dest="$PROJECT_ROOT/.mcp.json"
+  [ -f "$src" ] || { echo "✗ $src がありません" >&2; return 1; }
 
-if [ -f "$DEST" ]; then
-  if command -v jq >/dev/null 2>&1; then
-    tmp="$(mktemp)"
-    # jq の * は再帰マージ。既存サーバを残したまま git/slack を追加する
-    jq -s '.[0] * .[1]' "$DEST" "$SRC" > "$tmp" && mv "$tmp" "$DEST"
-    echo "✓ 既存の $DEST に git/slack サーバをマージしました"
+  if [ -f "$dest" ]; then
+    if command -v jq >/dev/null 2>&1; then
+      local tmp; tmp="$(mktemp)"
+      # jq の * は再帰マージ。利用者の他サーバを残したまま git/slack を上書き同期する
+      jq -s '.[0] * .[1]' "$dest" "$src" > "$tmp" && mv "$tmp" "$dest"
+      echo "✓ MCP: 既存の .mcp.json に同期しました"
+    else
+      echo "⚠ MCP: .mcp.json が既存で jq が無いため自動同期できません。" >&2
+      echo "       $src の mcpServers を手動で $dest にマージしてください。" >&2
+    fi
   else
-    echo "⚠ $DEST が既に存在し、jq が無いため自動マージできません。" >&2
-    echo "  $SRC の mcpServers を手動で $DEST にマージしてください。" >&2
-    exit 1
+    cp "$src" "$dest"
+    echo "✓ MCP: .mcp.json を作成しました"
   fi
-else
-  cp "$SRC" "$DEST"
-  echo "✓ $DEST を作成しました"
-fi
+}
+
+# --- 全員に入れたいツール/パッケージのインストール ---------------------------
+# 冪等に書くこと（再実行で壊れないように）。例:
+#   command -v uv  >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
+#   npm ls -g some-cli >/dev/null 2>&1 || npm i -g some-cli
+install_tools() {
+  : # 今はなし
+}
+
+# --- その他の共有設定の適用 ---------------------------------------------------
+apply_settings() {
+  : # 今はなし
+}
+
+sync_mcp
+install_tools
+apply_settings
 
 cat <<'NOTE'
 

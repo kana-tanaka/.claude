@@ -1,0 +1,4 @@
+# skills 以外をすべて無視する
+/*
+!/.gitignore
+!/skills/
